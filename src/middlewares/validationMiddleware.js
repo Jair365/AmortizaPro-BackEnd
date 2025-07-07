@@ -58,3 +58,64 @@ exports.validateLogin = [
     next();
   }
 ];
+
+exports.validateEmision = [
+  body('nombreEmision')
+    .notEmpty()
+    .withMessage('El nombre de la emisión es obligatorio')
+    .isLength({ min: 3, max: 200 })
+    .withMessage('El nombre debe tener entre 3 y 200 caracteres'),
+  
+  body('fechaEmision')
+    .notEmpty()
+    .withMessage('La fecha de emisión es obligatoria')
+    .isISO8601()
+    .withMessage('La fecha de emisión debe ser válida'),
+  
+  body('capital')
+    .notEmpty()
+    .withMessage('El capital es obligatorio')
+    .isFloat({ min: 1000 })
+    .withMessage('El capital debe ser mayor a 1000'),
+  
+  body('numeroPeriodos')
+    .notEmpty()
+    .withMessage('El número de períodos es obligatorio')
+    .isInt({ min: 1, max: 360 })
+    .withMessage('El número de períodos debe ser entre 1 y 360'),
+  
+  body('tipoPeriodo')
+    .notEmpty()
+    .withMessage('El tipo de período es obligatorio')
+    .isIn(['años', 'meses'])
+    .withMessage('El tipo de período debe ser "años" o "meses"'),
+  
+  body('cok')
+    .notEmpty()
+    .withMessage('El COK es obligatorio')
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('El COK debe ser un porcentaje válido entre 0 y 100'),
+  
+  body('tasaInteres')
+    .notEmpty()
+    .withMessage('La tasa de interés es obligatoria')
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('La tasa de interés debe ser un porcentaje válido entre 0 y 100'),
+  
+  body('tipoTasa')
+    .notEmpty()
+    .withMessage('El tipo de tasa es obligatorio')
+    .isIn(['TEM', 'TNM', 'TEB', 'TNB', 'TET', 'TNT', 'TES', 'TNS', 'TEA', 'TNA'])
+    .withMessage('El tipo de tasa debe ser uno de los valores válidos'),
+  
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ 
+        mensaje: 'Error de validación',
+        errores: errors.array() 
+      });
+    }
+    next();
+  }
+];

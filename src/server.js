@@ -2,9 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const { sequelize, testDbConnection } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+const emisionRoutes = require('./routes/emisionRoutes');
 const { notFound, errorHandler } = require('./middlewares/errorMiddleware');
 const config = require('./config/env');
 const { setupSwagger } = require('./config/swagger');
+
+// Importar modelos para establecer relaciones
+require('./models');
 
 // Inicializar express
 const app = express();
@@ -20,6 +24,7 @@ setupSwagger(app);
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/emisiones', emisionRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
