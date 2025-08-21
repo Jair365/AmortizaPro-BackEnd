@@ -119,3 +119,22 @@ exports.validateEmision = [
     next();
   }
 ];
+
+exports.validateConexion = [
+  body('emisorId')
+    .notEmpty()
+    .withMessage('El ID del emisor es obligatorio')
+    .isInt({ min: 1 })
+    .withMessage('El ID del emisor debe ser un número entero válido'),
+  
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ 
+        mensaje: 'Error de validación',
+        errores: errors.array() 
+      });
+    }
+    next();
+  }
+];

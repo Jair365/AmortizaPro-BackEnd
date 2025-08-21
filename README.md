@@ -14,12 +14,70 @@ Backend para la aplicación AmortizaPro, desarrollado con Node.js, Express y Pos
 
 ## Instalación
 
+### Instalación con Docker (Recomendado)
+
+La forma más sencilla de ejecutar la aplicación es usando Docker Compose:
+
+```bash
+# Clonar el repositorio
+git clone <repository-url>
+cd AmortizaPro-BackEnd
+
+# Construir y ejecutar la aplicación completa (backend + PostgreSQL)
+docker-compose up -d
+
+# Verificar que los servicios estén funcionando
+docker-compose ps
+
+# Detener los servicios
+docker-compose down
+```
+
+La aplicación estará disponible en:
+- **API Backend**: http://localhost:3000
+- **Documentación Swagger**: http://localhost:3000/api-docs
+- **Health Check**: http://localhost:3000/api/health
+- **PostgreSQL**: localhost:5432
+
+### Instalación tradicional (Desarrollo local)
+
 1. Clonar el repositorio
 2. Instalar dependencias: `npm install`
-3. Configurar variables de entorno en el archivo `.env`
-4. Asegurarse de tener PostgreSQL corriendo y crear la base de datos `amortizaPro`
+3. Asegurarse de tener PostgreSQL corriendo localmente
+4. Crear la base de datos `amortizapro`
 5. Iniciar el servidor: `npm run dev`
-6. Acceder a la documentación Swagger: `http://localhost:3000/api-docs`
+
+**Nota**: Con Docker no necesitas archivos `.env` ya que todas las variables están configuradas en el docker-compose.yml
+
+## Comandos útiles de Docker
+
+```bash
+# Ver logs en tiempo real
+docker-compose logs -f
+
+# Ver logs solo del backend
+docker-compose logs -f amortizapro-backend
+
+# Ver logs solo de la base de datos
+docker-compose logs -f postgres
+
+# Reiniciar solo el backend
+docker-compose restart amortizapro-backend
+
+# Acceder al contenedor del backend
+docker exec -it amortizapro-backend sh
+
+# Acceder a PostgreSQL
+docker exec -it amortizapro-postgres psql -U postgres -d amortizapro
+
+# Limpiar todo (contenedores, volúmenes, imágenes)
+docker-compose down -v
+docker system prune -a
+
+# Reconstruir las imágenes
+docker-compose build --no-cache
+docker-compose up -d
+```
 
 ## Endpoints de API
 
@@ -72,6 +130,25 @@ Backend para la aplicación AmortizaPro, desarrollado con Node.js, Express y Pos
   - Headers: `Authorization: Bearer [token]`
   - Response: `{ "mensaje": "string", "data": {} }`
 
+### Conexiones entre Inversionistas y Emisores
+
+- **POST /api/auth/conectar**: Crear conexión con un emisor (solo inversionistas)
+  - Headers: `Authorization: Bearer [token]`
+  - Body: `{ "emisorId": number }`
+  - Response: `{ "mensaje": "string", "conexion": {} }`
+
+- **GET /api/auth/mis-conexiones**: Obtener conexiones del inversionista actual
+  - Headers: `Authorization: Bearer [token]`
+  - Response: `{ "mensaje": "string", "totalConexiones": number, "conexiones": [] }`
+
+- **DELETE /api/auth/desconectar/:emisorId**: Eliminar conexión con un emisor
+  - Headers: `Authorization: Bearer [token]`
+  - Response: `{ "mensaje": "string" }`
+
+- **GET /api/auth/emisiones-conectadas**: Obtener emisiones de emisores conectados (solo inversionistas)
+  - Headers: `Authorization: Bearer [token]`
+  - Response: `{ "mensaje": "string", "totalEmisiones": number, "emisiones": [] }`
+
 ## Base de datos
 
 El sistema utiliza una base de datos PostgreSQL con las siguientes tablas:
@@ -120,9 +197,21 @@ El sistema utiliza una base de datos PostgreSQL con las siguientes tablas:
 - createdAt: Fecha de creación
 - updatedAt: Fecha de actualización
 
+### Tabla: conexiones
+- id: Identificador único (PK)
+- inversionistaId: ID del usuario inversionista (FK)
+- emisorId: ID del usuario emisor (FK)
+- estado: Estado de la conexión ('activa' o 'inactiva', por defecto 'activa')
+- createdAt: Fecha de creación
+- updatedAt: Fecha de actualización
+
 ## Relaciones entre tablas
 
 - Un **usuario** puede tener muchas **emisiones** (1:N)
 - Una **emisión** puede tener muchas **boletas** (1:N)
+- Un **inversionista** puede tener muchas **conexiones** con emisores (1:N)
+- Un **emisor** puede tener muchas **conexiones** con inversionistas (1:N)
 - Solo usuarios con rol "emisor" pueden crear emisiones
+- Solo usuarios con rol "inversionista" pueden crear conexiones
 - Cada emisión genera automáticamente su tabla de amortización (boletas)
+- Las conexiones permiten a los inversionistas seguir emisores específicos

@@ -1,5 +1,5 @@
 const { Emision, Boleta, Usuario } = require('../models');
-const { calcularValoresEmision, generarBoletas } = require('../utils/calculosFinancieros');
+const { calcularValoresEmision, generarBoletas, calcularVAN, calcularTIR, calcularTCEA } = require('../utils/calculosFinancieros');
 
 /**
  * Crear una nueva emisión de bonos
@@ -329,11 +329,114 @@ const obtenerMisBoletas = async (req, res) => {
   }
 };
 
+/**
+ * Obtener indicadores de rentabilidad del emisor
+ * - Tasa de descuento (COK) período (mensual)
+ * - TIR período de la operación (flujo emisor)
+ * - TCEA de la operación
+ * - VAN del emisor
+ */
+const getIndicadoresEmisor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Solo emisores pueden consultar
+    if (req.usuario.rol !== 'emisor') {
+      return res.status(403).json({ mensaje: 'Solo los usuarios con rol de emisor pueden ver estos indicadores' });
+    }
+    // Buscar emisión y boletas
+    const emision = await Emision.findByPk(id, {
+      include: [{ model: Boleta, as: 'boletas', order: [['numeroPeriodo', 'ASC']] }]
+    });
+    if (!emision) {
+      return res.status(404).json({ mensaje: 'Emisión no encontrada' });
+    }
+    // Ordenar boletas por periodo
+    const boletas = (emision.boletas || []).sort((a, b) => a.numeroPeriodo - b.numeroPeriodo);
+    // Flujo del emisor
+    const flujoEmisor = boletas.map(b => Number(b.flujoEmisor));
+    
+    // COK período (mensual): convertir TEA a TEM
+    const cokTEA = Number(emision.cok);
+    const cokPeriodo = Math.pow(1 + cokTEA / 100, 1/12) - 1;
+    
+    // TIR del flujo emisor (mensual)
+    const tirPeriodo = calcularTIR(flujoEmisor);
+    
+    // TCEA de la operación
+    const tcea = calcularTCEA(tirPeriodo, 30);
+    // VAN del emisor (a COK período)
+    const van = calcularVAN(flujoEmisor, cokPeriodo);
+    return res.json({
+      cokPeriodo: cokPeriodo * 100, // % mensual
+      tirPeriodo: tirPeriodo * 100, // % mensual
+      tcea: tcea * 100, // % anual
+      van
+    });
+  } catch (error) {
+    console.error('Error en indicadores emisor:', error);
+    return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+  }
+};
+
+/**
+ * Obtener indicadores financieros del inversionista para una emisión específica
+ */
+const obtenerIndicadoresInversionista = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Solo inversionistas pueden consultar
+    if (req.usuario.rol !== 'inversionista') {
+      return res.status(403).json({ mensaje: 'Solo los usuarios con rol de inversionista pueden ver estos indicadores' });
+    }
+    
+    // Buscar emisión y boletas
+    const emision = await Emision.findByPk(id, {
+      include: [{ model: Boleta, as: 'boletas', order: [['numeroPeriodo', 'ASC']] }]
+    });
+    
+    if (!emision) {
+      return res.status(404).json({ mensaje: 'Emisión no encontrada' });
+    }
+    
+    // Ordenar boletas por periodo
+    const boletas = (emision.boletas || []).sort((a, b) => a.numeroPeriodo - b.numeroPeriodo);
+    
+    // Flujo del inversionista
+    const flujoInversionista = boletas.map(b => Number(b.flujoInversionista));
+    
+    // COK período (mensual): convertir TEA a TEM
+    const cokTEA = Number(emision.cok);
+    const cokPeriodo = Math.pow(1 + cokTEA / 100, 1/12) - 1;
+    
+    // TIR del flujo inversionista (mensual)
+    const tirPeriodo = calcularTIR(flujoInversionista);
+    
+    // TREA de la operación (misma fórmula que TCEA)
+    const trea = calcularTCEA(tirPeriodo, 30);
+    
+    // VAN del inversionista (a COK período)
+    const van = calcularVAN(flujoInversionista, cokPeriodo);
+    
+    return res.json({
+      cokPeriodo: cokPeriodo * 100, // % mensual
+      tirPeriodo: tirPeriodo * 100, // % mensual
+      trea: trea * 100, // % anual
+      van
+    });
+  } catch (error) {
+    console.error('Error en indicadores inversionista:', error);
+    return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+  }
+};
+
 module.exports = {
   crearEmision,
   obtenerMisEmisiones,
   obtenerTodasLasEmisiones,
   obtenerEmisionConBoletas,
   eliminarEmision,
-  obtenerMisBoletas
+  obtenerMisBoletas,
+  getIndicadoresEmisor,
+  obtenerIndicadoresInversionista
 };

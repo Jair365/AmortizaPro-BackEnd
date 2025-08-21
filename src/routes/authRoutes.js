@@ -1,6 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
-const { validateRegister, validateLogin } = require('../middlewares/validationMiddleware');
+const { validateRegister, validateLogin, validateConexion } = require('../middlewares/validationMiddleware');
 const { verificarToken } = require('../middlewares/authMiddleware');
 const { verificarRol } = require('../middlewares/roleMiddleware');
 const router = express.Router();
@@ -188,26 +188,46 @@ router.get('/perfil', verificarToken, (req, res) => {
  * @swagger
  * /api/auth/emisor:
  *   get:
- *     summary: Acceso exclusivo para emisores
+ *     summary: Obtener todos los usuarios con rol de emisor
  *     tags: [Autenticación]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Acceso concedido para emisor
- *       401:
- *         description: No autenticado
- *       403:
- *         description: No autorizado, solo para emisores
+ *         description: Lista de emisores obtenida correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: Emisores obtenidos correctamente
+ *                 total:
+ *                   type: integer
+ *                 emisores:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       nombre:
+ *                         type: string
+ *                       correo:
+ *                         type: string
+ *                         format: email
+ *                       rol:
+ *                         type: string
+ *                         example: emisor
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       500:
+ *         description: Error del servidor
  */
-router.get('/emisor', verificarToken, verificarRol(['emisor']), (req, res) => {
-  res.json({
-    mensaje: 'Acceso para emisores concedido',
-    data: {
-      info: 'Esta es información exclusiva para emisores'
-    }
-  });
-});
+router.get('/emisor', authController.obtenerEmisores);
 
 /**
  * @swagger
@@ -233,5 +253,231 @@ router.get('/inversionista', verificarToken, verificarRol(['inversionista']), (r
     }
   });
 });
+
+/**
+ * @swagger
+ * /api/auth/emisores:
+ *   get:
+ *     summary: Obtener todos los usuarios con rol de emisor
+ *     tags: [Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Emisores obtenidos correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: Emisores obtenidos correctamente
+ *                 emisores:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       nombre:
+ *                         type: string
+ *                       correo:
+ *                         type: string
+ *                         format: email
+ *                       rol:
+ *                         type: string
+ *                         example: emisor
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: No autenticado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/emisores', authController.obtenerEmisores);
+
+/**
+ * @swagger
+ * /api/auth/usuarios-debug:
+ *   get:
+ *     summary: Obtener todos los usuarios (solo para debugging)
+ *     tags: [Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Usuarios obtenidos correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                   example: Usuarios obtenidos correctamente
+ *                 usuarios:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       nombre:
+ *                         type: string
+ *                       correo:
+ *                         type: string
+ *                         format: email
+ *                       rol:
+ *                         type: string
+ *                         example: inversionista
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: No autenticado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/usuarios-debug', authController.obtenerTodosLosUsuarios);
+
+/**
+ * @swagger
+ * /api/auth/conectar:
+ *   post:
+ *     summary: Crear conexión con un emisor (solo inversionistas)
+ *     tags: [Conexiones]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - emisorId
+ *             properties:
+ *               emisorId:
+ *                 type: integer
+ *                 description: ID del emisor con quien conectarse
+ *             example:
+ *               emisorId: 5
+ *     responses:
+ *       201:
+ *         description: Conexión creada exitosamente
+ *       400:
+ *         description: Error en los datos o conexión ya existe
+ *       403:
+ *         description: Solo inversionistas pueden crear conexiones
+ *       404:
+ *         description: Emisor no encontrado
+ */
+router.post('/conectar', verificarToken, validateConexion, authController.crearConexion);
+
+/**
+ * @swagger
+ * /api/auth/mis-conexiones:
+ *   get:
+ *     summary: Obtener las conexiones del inversionista actual
+ *     tags: [Conexiones]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Conexiones obtenidas correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                 totalConexiones:
+ *                   type: integer
+ *                 conexiones:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       emisor:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           nombre:
+ *                             type: string
+ *                           correo:
+ *                             type: string
+ *                       fechaConexion:
+ *                         type: string
+ *                         format: date-time
+ *       403:
+ *         description: Solo inversionistas pueden ver conexiones
+ */
+router.get('/mis-conexiones', verificarToken, authController.obtenerMisConexiones);
+
+/**
+ * @swagger
+ * /api/auth/desconectar/{emisorId}:
+ *   delete:
+ *     summary: Eliminar conexión con un emisor
+ *     tags: [Conexiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: emisorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del emisor a desconectar
+ *     responses:
+ *       200:
+ *         description: Conexión eliminada exitosamente
+ *       403:
+ *         description: Solo inversionistas pueden eliminar conexiones
+ *       404:
+ *         description: Conexión no encontrada
+ */
+router.delete('/desconectar/:emisorId', verificarToken, authController.eliminarConexion);
+
+/**
+ * @swagger
+ * /api/auth/emisiones-conectadas:
+ *   get:
+ *     summary: Obtener emisiones de emisores conectados (solo inversionistas)
+ *     tags: [Conexiones]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Emisiones de emisores conectados obtenidas correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                 totalEmisiones:
+ *                   type: integer
+ *                 emisiones:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Emision'
+ *       403:
+ *         description: Solo inversionistas pueden ver emisiones conectadas
+ */
+router.get('/emisiones-conectadas', verificarToken, authController.obtenerEmisionesConectadas);
 
 module.exports = router;

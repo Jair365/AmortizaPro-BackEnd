@@ -8,23 +8,17 @@
     "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Jair365/AmortizaPro-BackEnd.git"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Jair365/AmortizaPro-BackEnd/issues"
-  },
-  "homepage": "https://github.com/Jair365/AmortizaPro-BackEnd#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "financial": "^0.2.4",
+    "formulajs": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.0",
     "pg-hstore": "^2.3.4",

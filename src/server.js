@@ -31,6 +31,15 @@ app.get('/', (req, res) => {
   res.json({ mensaje: 'API de AmortizaPro funcionando correctamente' });
 });
 
+// Health check endpoint para Docker
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Middleware para manejo de errores
 app.use(notFound);
 app.use(errorHandler);

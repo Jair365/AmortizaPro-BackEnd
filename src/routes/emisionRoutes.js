@@ -355,11 +355,15 @@ router.get('/:id', verificarToken, emisionController.obtenerEmisionConBoletas);
  *       403:
  *         description: No tienes permisos para eliminar esta emisión
  *       404:
+ *         description: Emisión no encontrada
+ */
+router.delete('/:id', verificarToken, emisionController.eliminarEmision);
+
 /**
  * @swagger
- * /api/emisiones/{id}:
- *   delete:
- *     summary: Eliminar una emisión (solo el propietario)
+ * /api/emisiones/{id}/indicadores-emisor:
+ *   get:
+ *     summary: Obtener indicadores de rentabilidad del emisor (COK período, TIR, TCEA, VAN)
  *     tags: [Emisiones]
  *     security:
  *       - bearerAuth: []
@@ -372,12 +376,71 @@ router.get('/:id', verificarToken, emisionController.obtenerEmisionConBoletas);
  *         description: ID de la emisión
  *     responses:
  *       200:
- *         description: Emisión eliminada correctamente
+ *         description: Indicadores calculados correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cokPeriodo:
+ *                   type: number
+ *                   description: Tasa de descuento (COK) período mensual (%)
+ *                 tirPeriodo:
+ *                   type: number
+ *                   description: TIR período de la operación (%)
+ *                 tcea:
+ *                   type: number
+ *                   description: TCEA de la operación (%)
+ *                 van:
+ *                   type: number
+ *                   description: VAN del emisor
  *       403:
- *         description: No tienes permisos para eliminar esta emisión
+ *         description: Solo usuarios emisores pueden ver estos indicadores
  *       404:
  *         description: Emisión no encontrada
  */
-router.delete('/:id', verificarToken, emisionController.eliminarEmision);
+router.get('/:id/indicadores-emisor', verificarToken, emisionController.getIndicadoresEmisor);
+
+/**
+ * @swagger
+ * /api/emisiones/{id}/indicadores-inversionista:
+ *   get:
+ *     summary: Obtener indicadores de rentabilidad del inversionista (COK período, TIR, TREA, VAN)
+ *     tags: [Emisiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la emisión
+ *     responses:
+ *       200:
+ *         description: Indicadores calculados correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cokPeriodo:
+ *                   type: number
+ *                   description: Tasa de descuento (COK) período mensual (%)
+ *                 tirPeriodo:
+ *                   type: number
+ *                   description: TIR período de la operación desde perspectiva del inversionista (%)
+ *                 trea:
+ *                   type: number
+ *                   description: TREA (Tasa de Rendimiento Efectiva Anual) de la operación (%)
+ *                 van:
+ *                   type: number
+ *                   description: VAN del inversionista
+ *       403:
+ *         description: Solo usuarios inversionistas pueden ver estos indicadores
+ *       404:
+ *         description: Emisión no encontrada
+ */
+router.get('/:id/indicadores-inversionista', verificarToken, emisionController.obtenerIndicadoresInversionista);
 
 module.exports = router;

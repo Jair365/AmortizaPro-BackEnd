@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: amortizapro-postgres
+    environment:
+      - POSTGRES_DB=amortizapro
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - amortizapro-network
+
+  # Aplicación Backend
+  amortizapro-backend:
+    build: .
+    container_name: amortiza-back
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=amortizapro
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - JWT_SECRET=amortizapro-jwt-secret-2025
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - amortizapro-network
+
+volumes:
+  postgres_data:
+
+networks:
+  amortizapro-network:
+    driver: bridge

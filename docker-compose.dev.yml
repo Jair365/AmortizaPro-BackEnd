@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Aplicación Backend en modo desarrollo
+  amortizapro-backend-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: amortizapro-backend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=postgres-dev
+      - DB_PORT=5432
+      - DB_NAME=amortizapro_dev
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - JWT_SECRET=dev-jwt-secret
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - /app/node_modules
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - amortizapro-dev-network
+
+  # Base de datos PostgreSQL para desarrollo
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: amortizapro-postgres-dev
+    environment:
+      - POSTGRES_DB=amortizapro_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - amortizapro-dev-network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  amortizapro-dev-network:
+    driver: bridge
